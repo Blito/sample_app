@@ -17,6 +17,8 @@ group :test do
   gem 'rb-inotify', '0.9.0'
   gem 'libnotify', '0.8.0'
   gem 'factory_girl_rails', '4.2.0'
+  gem 'cucumber-rails', '1.3.0', :require => false
+  gem 'database_cleaner', '~> 1.0.0.rc2'
 end
 
 group :assets do
