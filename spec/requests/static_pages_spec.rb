@@ -30,15 +30,53 @@ describe "Static pages" do
     describe "for signed-in users" do
       let(:user) { FactoryGirl.create(:user) }
       before do
-        FactoryGirl.create(:micropost, user: user, content: "Lorem ipsum")
-        FactoryGirl.create(:micropost, user: user, content: "Dolor sit amet")
+        50.times { FactoryGirl.create(:micropost, user: user) }
         sign_in user
         visit root_path
       end
 
-      it "should render the user's feed" do
-        user.feed.each do |item|
-          expect(page).to have_selector("li##{item.id}", text: item.content)
+      after { user.microposts.delete_all }
+
+      describe "feed" do
+
+        it "should render the user's feed" do
+          user.feed.paginate(page: 1).each do |item|
+            expect(page).to have_selector("li##{item.id}", text: item.content)
+          end
+        end
+
+        it "should not render delete links for microposts not created by the user" do
+          others_microposts = []
+          others_microposts ||= user.feed.find { |micropost| micropost.user != user }
+          others_microposts.each do |micropost|
+            expect(page).not_to have_selector("li##{micropost.id}", text: "delete") 
+          end
+        end
+
+        it "should render the micropost's count" do
+          expect(page).to have_content(user.feed.count)
+        end
+
+        describe "follower/following counts" do
+          let(:other_user) { FactoryGirl.create(:user) }
+          before do
+            other_user.follow!(user)
+            visit root_path
+          end
+
+          it { should have_link("0 following", href: following_user_path(user)) }
+          it { should have_link("1 followers", href: followers_user_path(user)) }
+        end
+      end
+
+      describe "pagination" do
+
+        it { should have_selector('div.pagination') }
+
+        it "should list each micropost" do
+          user.microposts.paginate(page: 1).each do |micropost|
+            expect(page).to have_selector('li', text: micropost.content)
+          end
         end
       end
     end
